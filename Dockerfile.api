@@ -1,0 +1,34 @@
+FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies
+# Using a requirements inline to keep the image small and self-contained
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn \
+    torch \
+    transformers
+
+# Copy application code
+COPY src/api.py /app/api.py
+
+# IMPORTANT: model_output/ should be copied into the container.
+# Make sure it exists in the build context (run training script first)
+COPY model_output/ /app/model_output/
+
+# Expose port
+EXPOSE 8000
+
+# Set environment variable for model path
+ENV MODEL_PATH=/app/model_output
+
+# Run FastAPI with uvicorn
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
